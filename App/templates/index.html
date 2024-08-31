@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Upload and Result</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            text-align: left;
+            display: inline-block;
+            max-width: 600px;
+            word-wrap: break-word;
+        }
+        pre {
+            white-space: pre-wrap; /* To preserve whitespace and newlines */
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload a Video File</h1>
+    <form id="uploadForm">
+        <input type="file" id="fileInput" name="file" accept="video/*" required>
+        <button type="submit">Upload Video</button>
+    </form>
+    <div class="result" id="result" style="display: none;">
+        <h2>Result</h2>
+        <img id="frameImage" src="" alt="Selected Frame" style="max-width: 100%; display: block; margin: 0 auto;">
+        <pre id="resultText"></pre>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData();
+            const fileInput = document.getElementById('fileInput');
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/video-predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(data); // Debugging line to check what data is returned
+
+                    document.getElementById('resultText').textContent = data.report || 'No report available';
+                    document.getElementById('frameImage').src = data.selected_frame ? `http://127.0.0.1:5000/uploads/${data.selected_frame}` : '';
+                    document.getElementById('result').style.display = 'block';
+                } else {
+                    document.getElementById('resultText').textContent = 'Failed to get report from server';
+                    document.getElementById('result').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error uploading file:', error); // Improved error logging
+                document.getElementById('resultText').textContent = 'Error uploading file';
+                document.getElementById('result').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
