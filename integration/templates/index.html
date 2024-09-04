@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video DeepFake Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo"> <!-- Placeholder for logo -->
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" style="width: 100px; height: 100px;">
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <h1>Upload a Video for DeepFake Detection</h1>
+        <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data">
+            <input type="file" name="video" accept="video/*" required>
+            <button type="submit" class="btn">Analyze Video</button>
+        </form>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Video Analysis Inc. All Rights Reserved.</p>
+    </footer>
+</body>
+</html>

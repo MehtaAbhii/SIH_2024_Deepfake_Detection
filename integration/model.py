@@ -11,7 +11,7 @@ import cv2
 import argparse
 import imutils
 
-from classifiers import *
+
 import numpy as np
 
 import datetime
@@ -53,7 +53,7 @@ class Meso1(Classifier):
     """
     def __init__(self, learning_rate = 0.001, dl_rate = 1):
         self.model = self.init_model(dl_rate)
-        optimizer = Adam(lr = learning_rate)
+        optimizer = Adam(learning_rate=learning_rate)
         self.model.compile(optimizer = optimizer, loss = 'mean_squared_error', metrics = ['accuracy'])
     
     def init_model(self, dl_rate):
@@ -222,138 +222,136 @@ def get_heatmap_detection(model, in_imgg):
 	return output
 
 
+def resize_image(image, size):
+    if image is None or image.size == 0:
+        raise ValueError("Image is empty or not loaded properly.")
+    return cv2.resize(image, size)
 
 class VideoGanAnalyzer:
+    def __init__(self, name_of_video, model_path, is_gan_threshold=0.5):
+        self.name_of_video = name_of_video
+        self.model_path = model_path
+        self.is_gan_threshold = is_gan_threshold
+        self.detector = None
+        self.vs = None
+        self.fps = None
+        self.writer = None
+        self.H = None
+        self.W = None
+        self.model_input_shape = (256, 256)
+        self.list_frames = []
+        self.list_of_faces = []
+        self.classifier = None
 
-	def __init__(self, name_of_video, model_path, is_gan_threshold=0.5):
-		self.name_of_video = name_of_video
-		self.model_path = model_path
-		self.is_gan_threshold = is_gan_threshold
-		self.detector = None
-		self.vs = None
-		self.fps = None
-		self.writer = None
-		self.H = None
-		self.W = None
-		self.model_input_shape = (256, 256)
-		self.list_frames = []
-		self.list_of_faces = []
-		self.classifier = None
+    def load_face_detector(self):
+        print("[INFO] loading frontal face detector...")
+        self.detector = dlib.get_frontal_face_detector()
 
-	def load_face_detector(self):
-		print("[INFO] loading frontal face detector...")
-		self.detector = dlib.get_frontal_face_detector()
+    def load_video(self):
+        print("[INFO] loading video...")
+        self.vs = cv2.VideoCapture(self.name_of_video)
+        self.fps = self.vs.get(cv2.CAP_PROP_FPS)
+        print("[INFO] fps : {0}".format(self.fps))
+        time.sleep(2.0)
+        
 
-	def load_video(self):
-		print("[INFO] loading video...")
-		self.vs = cv2.VideoCapture(self.name_of_video)
-		self.fps = self.vs.get(cv2.CAP_PROP_FPS)
-		print("[INFO] fps : {0}".format(self.fps))
-		time.sleep(2.0)
+    def add_face_to_list(self, face_image, id_frame, id_face, coord):
+        if face_image is None or face_image.size == 0:
+            raise ValueError("Face image is empty or not loaded properly.")
+        
+        resized_image = resize_image(face_image, self.model_input_shape)
+        
+        return {"image": face_image, "image_resized": resized_image, "id_frame": id_frame, "id_face": id_face, "coord": coord}
 
-	def add_face_to_list(self, face_image, id_frame, id_face, coord):
-		"""{"image" : np.array, "id_frame" : int, "coord" : [x, y, w, h]}"""
-		return {"image" : face_image, "image_resized" : cv2.resize(np.copy(face_image), self.model_input_shape),
-				"id_frame" : id_frame, "id_face" : id_face, "coord" : coord}
+    def read_video(self):
+        print("[INFO] reading the video...")
+        while True:
+            (grabbed, frame) = self.vs.read()
+            if not grabbed or frame is None:
+                break
+            self.list_frames.append(frame)
+        assert 0 < len(self.list_frames), "[WARNING] video empty, check the file name..."
 
-	def read_video(self):
-		print("[INFO] reading the video...")
-		while True:
-			(grabbed, frame) = self.vs.read()
-			if not grabbed:
-				break
-			self.list_frames.append(frame)
-		assert 0 < len(self.list_frames), "[WARNING] video empty, check the file name..."
+    def detect_faces(self):
+        print("[INFO] detecting faces...")
+        for id_frame, frame in enumerate(self.list_frames):
 
-	def detect_faces(self):
-		print("[INFO] detecting faces...")
-		for id_frame, frame in enumerate(self.list_frames):
+            if self.W is None or self.H is None:
+                (self.H, self.W) = frame.shape[:2]
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-			if self.W is None or self.H is None:
-				(self.H, self.W) = frame.shape[:2]
-			gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            rects = self.detector(gray, 0)
 
-			rects = self.detector(gray, 0)
+            # for each face
+            for (i, rect) in enumerate(rects):
+                (x, y, w, h) = face_utils.rect_to_bb(rect)
+                modif_factor = 0.2
+                modif_w = int(modif_factor * w)
+                x -= modif_w
+                w += 2 * modif_w
+                modif_h = int(modif_factor * h)
+                y -= modif_h
+                h += 2 * modif_h
 
-			# for each face
-			for (i, rect) in enumerate(rects):
-				# convert dlib's rectangle to a OpenCV-style bounding box
-				# [i.e., (x, y, w, h)], then draw the face bounding box
-				(x, y, w, h) = face_utils.rect_to_bb(rect)
-				# upsizing the rectangle
-				modif_factor = 0.2
-				modif_w = int(modif_factor * w)
-				x -= modif_w
-				w += 2*modif_w
-				modif_h = int(modif_factor * h)
-				y -= modif_h
-				h += 2*modif_h
+                x = max(0, x)
+                y = max(0, y)
+                w = min(self.W - x, w)
+                h = min(self.H - y, h)
 
-				self.list_of_faces.append(self.add_face_to_list(frame[y:y+h, x:x+w], id_frame, i, [x, y, w, h]))
+                face_image = frame[y:y+h, x:x+w]
+                if face_image is None or face_image.size == 0:
+                    print(f"[WARNING] Skipping an empty face image at frame {id_frame}, face {i}.")
+                    continue
 
-	def load_classifier(self):
-		# Load the model and its pretrained weights
-		print("[INFO] loading the model...")
-		self.classifier = MesoInception4()
-		self.classifier.load(self.model_path)
+                self.list_of_faces.append(self.add_face_to_list(face_image, id_frame, i, [x, y, w, h]))
 
-	def gan_analysis(self):
-		print("[INFO] analyzing the video...")
-		for face in self.list_of_faces:
+    def load_classifier(self):
+        print("[INFO] loading the model...")
+        self.classifier = MesoInception4()
+        self.classifier.load(self.model_path)
 
-			frame = self.list_frames[face["id_frame"]]
-			x, y, w, h = face["coord"]
-			i = face["id_face"]
+    def gan_analysis(self):
+        print("[INFO] analyzing the video...")
+        for face in self.list_of_faces:
 
-			pred = self.classifier.predict(np.expand_dims(face["image_resized"], axis=0)/255.)
-			pred = float(pred)
+            frame = self.list_frames[face["id_frame"]]
+            x, y, w, h = face["coord"]
+            i = face["id_face"]
 
-			gan_detected = False
-			if pred < self.is_gan_threshold:
-				gan_detected = True
+            pred = self.classifier.predict(np.expand_dims(face["image_resized"], axis=0)/255.)
+            pred = float(pred)
 
-			# BGR instead of RGB because it is cv2
-			color_is_gan = (0, 255, 0) if not gan_detected else (0, 0, 255)
+            gan_detected = False
+            if pred < self.is_gan_threshold:
+                gan_detected = True
 
-			if gan_detected:
-				frame[y:y+h, x:x+w] = get_heatmap_detection(self.classifier.model, face["image"])
+            color_is_gan = (0, 255, 0) if not gan_detected else (0, 0, 255)
 
-			cv2.rectangle(frame, (x, y), (x + w, y + h), color_is_gan, 3)
-			cv2.putText(frame, "Face #{}".format(i + 1), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1., color_is_gan, 3)
+            if gan_detected:
+                frame[y:y+h, x:x+w] = get_heatmap_detection(self.classifier.model, face["image"])
 
-	def save_video(self):
-		print("[INFO] saving the video...")
-		for frame in self.list_frames:
-			# check if the video writer is None
-			if self.writer is None:
-				# initialize our video writer
-				fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-				self.writer = cv2.VideoWriter(self.name_of_video[:-4] + "_analyzed.avi", fourcc, self.fps, (self.W, self.H), True)
-			# write the output frame to disk
-			self.writer.write(frame)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), color_is_gan, 3)
+            cv2.putText(frame, "Face #{}".format(i + 1), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1., color_is_gan, 3)
 
-	def clean_end(self):
-		# release the file pointers
-		print("[INFO] cleaning up...")
-		self.writer.release()
-		self.vs.release()
+    def save_video(self):
+        print("[INFO] saving the video...")
+        for frame in self.list_frames:
+            if self.writer is None:
+                fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+                self.writer = cv2.VideoWriter(self.name_of_video[:-4] + "_analyzed.avi", fourcc, self.fps, (self.W, self.H), True)
+            self.writer.write(frame)
 
-	def main(self):
-		self.load_face_detector()
-		self.load_video()
-		self.read_video()
-		self.detect_faces()
-		self.load_classifier()
-		self.gan_analysis()
-		self.save_video()
-		self.clean_end()
+    def clean_end(self):
+        print("[INFO] cleaning up...")
+        self.writer.release()
+        self.vs.release()
 
-
-if __name__ == "__main__":
-
-	name_of_video = r"D:\deepfakes.gif"
-	model_path = "models/MesoInception_DF.h5"
-
-	analyzer = VideoGanAnalyzer(name_of_video, model_path)
-	analyzer.main()
-
+    def main(self):
+        self.load_face_detector()
+        self.load_video()
+        self.read_video()
+        self.detect_faces()
+        self.load_classifier()
+        self.gan_analysis()
+        self.save_video()
+        self.clean_end()

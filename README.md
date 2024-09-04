@@ -2,6 +2,12 @@
 
 ---
 
+
+
+
+
+https://github.com/user-attachments/assets/a24d3657-57b1-4f81-bdcb-5fd81b2c7a7b
+
 ## Problem Statement ID
 
 ```
@@ -33,9 +39,10 @@ A comprehensive solution with accessible and user-friendly Android app as well a
 
 ```
 1. Detailed analysis of the video to detect deepfake content with attention map of facial anomalies
-2. Multi-modal approach to detect deepfake videos using both audio and visual cues
-3. User-friendly Android app for easy access to the solution instant and on-the-go
-4. Web interface for on-device analysis of deepfake videos, protecting user privacy
+2. Detailed report generation , justifying the model's decision
+3. Multi-modal approach to detect deepfake videos using both audio and visual cues
+4. User-friendly Android app for easy access to the solution instant and on-the-go
+5. Web interface for on-device analysis of deepfake videos, protecting user privacy
 ```
 
 ---
