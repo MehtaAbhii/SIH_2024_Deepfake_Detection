@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Video</title>
+</head>
+<body>
+    <h1>Upload a Video for Deepfake Detection</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <label for="file">Choose video file:</label>
+        <input type="file" id="file" name="file" accept="video/*" required>
+        <button type="submit">Upload</button>
+    </form>
+    {% if video_url %}
+    <h2>Result:</h2>
+    <p>Class: {{ class }}</p>
+    <p>Confidence (Real): {{ confidence_real }}</p>
+    <p>Confidence (Fake): {{ confidence_fake }}</p>
+    <h3>Processed Video:</h3>
+    <video width="640" height="480" controls>
+        <source src="{{ video_url }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    {% endif %}
+</body>
+</html>

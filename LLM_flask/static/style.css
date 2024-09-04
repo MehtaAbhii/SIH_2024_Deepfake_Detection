@@ -1,0 +1,56 @@
+/* Basic styles for the container */
+.container {
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Styling for the result box */
+.result {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    background-color: #f9f9f9;
+    overflow: auto; /* Ensures overflow is handled */
+}
+
+/* Ensure text does not overflow the box */
+pre {
+    white-space: pre-wrap; /* Allows text to wrap */
+    word-wrap: break-word; /* Breaks long words */
+}
+
+/* Styling for flags */
+.flag {
+    margin: 20px 0;
+}
+
+.flag-result {
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.flag.fake {
+    color: #d9534f; /* Red for fake */
+}
+
+.flag.real {
+    color: #5bc0de; /* Blue for real */
+}
+
+/* Button styles */
+.button {
+    display: inline-block;
+    padding: 10px 20px;
+    margin-top: 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
