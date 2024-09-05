@@ -183,9 +183,14 @@ def upload_video():
         finally:
             os.remove(filepath)
 
-        return render_template('results.html', report=report)
+        # Pass the report and analyzed video path to the template
+        return render_template(
+            'analysis_report.html',
+            report=report,
+            analyzed_video=f"{filename.rsplit('.', 1)[0]}_analyzed.avi"
+        )
+    return jsonify({"error": "Invalid file format"}), 400
 
-    return redirect(request.url)
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
