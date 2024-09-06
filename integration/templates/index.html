@@ -5,11 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video DeepFake Detection</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* Loading Screen Styles */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000; 
+            display: none; 
+        }
+        .spinner {
+            border: 8px solid rgba(0, 0, 0, 0.1);
+            border-left: 8px solid #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
+
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
     <header>
         <nav class="navbar">
-            <div class="logo"> <!-- Placeholder for logo -->
+            <div class="logo">
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" style="width: 100px; height: 100px;">
             </div>
             <ul class="nav-links">
@@ -22,14 +56,24 @@
     
     <div class="container">
         <h1>Upload a Video for DeepFake Detection</h1>
-        <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data">
+        <form id="upload-form" action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data">
             <input type="file" name="video" accept="video/*" required>
             <button type="submit" class="btn">Analyze Video</button>
         </form>
     </div>
 
     <footer>
-        <p>&copy; 2024 SIH O(log n). All Rights Reserved.</p>
+        <p>&copy; 2024 Video Analysis Inc. All Rights Reserved.</p>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('upload-form');
+            const loadingScreen = document.getElementById('loading-screen');
+
+            form.addEventListener('submit', function() {
+                loadingScreen.style.display = 'flex';
+            });
+        });
+    </script>
 </body>
 </html>
